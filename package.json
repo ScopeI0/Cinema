@@ -1,0 +1,26 @@
+{
+  "name": "cinema-custodian",
+  "version": "1.0.0",
+  "description": "ElCinema.com Improvised API",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Cinema",
+    "Movies",
+    "API",
+    "Egypt",
+    "Series",
+    "TV",
+    "Actors"
+  ],
+  "author": "Ahmed Khedr",
+  "license": "ISC",
+  "dependencies": {
+    "css-select": "^5.1.0",
+    "htmlparser2": "^10.0.0",
+    "undici": "^6.21.0"
+  }
+}
