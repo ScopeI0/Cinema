@@ -1,106 +1,84 @@
 import { NodeWithChildren } from 'domhandler';
 import { compile } from 'css-select';
-import { parseDocument } from 'htmlparser2';
 
-/** @typedef {import('htmlparser2').Options} Options */
+const clean = /(?<=>)\s+|\s+(?=<)/g;
+const sweep = /(?<=>)\s+(?=<)/g;
 
 /**
- * Minifies the data, parses the markup, returns the resulting document.
-
- * @param {string} data The data that should be parsed.
- * @param {Options} [options] Optional options for the parser and DOM handler.
+ * Remove problematic redundant whitespace between HTML tags.
  */
-export function Soup(data, options) {
-    return parseDocument(data.replace(/(?<=>)\s+|\s+(?=<)/g, ''), options);
+export function minify(data, strip = true) {
+    return data.replace(strip ? clean : sweep, '');
 }
 
-Object.assign(NodeWithChildren.prototype, {
-    /**
-     * Node positional indicator.
-     * 
-     * @returns {boolean} Whether the node matches the leaf criteria.
-     */
-    isLeaf() {
-        return !this.children.length || this.children.length === 1 && this.children[0].type === 'text';
-    },
+/**
+ * Performant lazy depth-first tree traverser.
+ */
+export function *posterity(root) {
+    const stack = [{ parent: root, index: 0 }];
 
-    /**
-     * Performant DOM traverser.
-     * 
-     * @param {boolean} [depth=true] Traversal mode, defaults to breadth-first, falls back to depth-first.
-     * @param {number} [limit=-1] Maximum breadths.
-     * @returns {IterableIterator<Node>} Node generator.
-     */
-    *descendants(breadth = true, limit = -1) {
-        let above = [this];
-        const extend = breadth ? 'push' : 'unshift';
-
-        while (above.length && limit--) {
-            const ground = above;
-            above = [];
-
-            for (let i = 0; i < ground.length; i++) {
-                const branch = ground[i].children;
-
-                for (let j = 0; j < branch.length; j++) {
-                    yield branch[j];
-                    if (branch[j].children?.length) above[extend](branch[j]);
-                }
-            }
-        }
-    },
-
-    /**
-     * DOM sieve, applies criteria on every node.
-     * 
-     * @param {string|function(Node): boolean} query Node qualification criteria.
-     * @param {number} [limit=-1] Maximum matches.
-     * @param {IterableIterator<Node>} [generator=this.descendants()] Node source.
-     * @returns {Node[]} Matching nodes.
-     */
-    select(query, limit = -1, generator = this.descendants()) {
-        if (typeof query !== 'function') query = compile(query);
-        const match = [];
-
-        for (const node of generator) if (query(node) && match.push(node), match.length === limit) break;
-    
-        return match;
-    },
-});
-
-/*
- * Contents Property
-get contents() {
-    return this.children.filter(child => child.data !== '\n');
+    while (stack.length) {
+        const bucket = stack[stack.length - 1]; // Peek
+        const { parent: { children: branch } , index } = bucket;
+        if (++bucket.index === branch.length) above.pop();
+        
+        const node = branch[index];
+        yield node;
+        const children = node.children;
+        if (children?.length && (children.length !== 1 || children[0].type !== 'text')) stack.push({ parent: node, index: 0 });
+    }
 }
-*/
 
-/*
- * Descendants Candidate
-function* descendants(self, breadth = true) {
-    let below  = [self.children];
-    const extend = breadth ? 'push' : 'unshift';
+/**
+ * Performant lazy breadth-first tree traverser.
+ */
+export function* descendants(root, { skip = 0, last = Infinity } = {}) {
+    let level = 0;
+    let queue = [root];
 
-    while (below.length) {
-    const ground = below;
-    below = [];
+    while (queue.length && level++ < last) {
+        const breadth = queue;
+        queue = [];
 
-        for (let i = 0; i < ground.length; i++) {
-            const branch = ground[i];
-            
+        for (let i = 0; i < breadth.length; i++) {
+            const branch = breadth[i].children;
+
             for (let j = 0; j < branch.length; j++) {
-                yield branch[j];
+                if (level > skip) yield branch[j];
                 const children = branch[j].children;
-                if (children?.length) below[extend](children);
+                if (children?.length && (children.length !== 1 || children[0].type !== 'text')) queue.push(branch[j]);
             }
         }
     }
 }
-*/
 
-/*
-TODO Improve depth-first by iterating backwards, either save starting indices in a stack or push in batches.
-TODO Absolute solution: distinct next and nextSibling node attributes.
-TODO Select can be made static.
-TODO Node type can be made more specific.
+/**
+ * Node sieve, applies query on every node.
+ */
+export function select(generator, query, { limit = Infinity } = {}) {
+    if (typeof query !== 'function') query = compile(query);
+    const match = [];
+
+    for (const node of generator) {
+        if (query(node)) {
+            match.push(node);
+            if (match.length === limit) break;
+        }
+    }
+
+    return match;
+}
+
+Object.assign(NodeWithChildren.prototype, {
+    /**
+     * Node sieve, applies query on every node.
+     */
+    select(query, { depth = true, limit = Infinity, ...options }) {
+        return select((depth ? posterity : descendants)(this, options), query, { limit });
+    },
+});
+
+/**
+TODO Posterity breadth control.
+TODO Descendants children & leaves facility.
 */

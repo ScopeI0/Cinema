@@ -1,0 +1,22 @@
+Domutils is redundant and not in use, is there a way to get rid of it?
+Not all nodes need to be traversed when css-selecting, is there a way to avoid fully walking the DOM?
+
+JS HTML Parsers:
+ - @selderee/plugin-htmlparser2     > Ecosystem, does css selecting differently.
+ - zeed-dom                         > How do they construct a select function from css-what token arrays? It supports JSX.
+ - html-dom-parser                  > Provides a custom tokenizer option.
+ - node-html-parser                 > Built-in css query support?
+ - neutron-html5parser              > The origins of html parsing in JS. It is only 300 lines of code, has a DOM builder?
+ - html5parser                      > Is it merely a tokenizer?
+ - htmljs-Parser                    > The fastest, is it merely a tokenizer and only event based?
+
+Use case specific Regex | C | Golang | Rust for absolute performance-phobia?
+Regex Critique - https://stackoverflow.com/questions/1732348/regex-match-open-tags-except-xhtml-self-contained-tags/1732454#1732454
+Use lxml and write a css to path converter? Or just use xpath?
+Is sax basically the event based parser? Are they more useful for my use case than DOM constructing?
+
+Cross-Language HTML Parser Benchmarks - https://medium.datadriveninvestor.com/fastest-html-parser-available-now-f677a68b81dd
+Webscraping Article - https://www.learndatasci.com/tutorials/ultimate-guide-web-scraping-w-python-requests-and-beautifulsoup/
+Google: "efficient dom traversal"
+HTML Parsing Specification - https://html.spec.whatwg.org/multipage/parsing.html#parsing
+Backend as a Service - PocketBase
